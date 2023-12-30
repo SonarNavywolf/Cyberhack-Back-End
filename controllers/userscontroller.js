@@ -1,4 +1,5 @@
 const db = require('../models/db.js');
+const jwt = require("jsonwebtoken");
 
 // Get all users
 const getAllUsers = ((req,res)=>{
@@ -19,10 +20,13 @@ const getUserById = ((req, res)=>{
   
   // Create a new user
   const registerNewUser = ((req, res)=>{
-    const {email, first_name, last_name, password, is_active } = req.body;
+    const {email, first_name, last_name, password, is_active, role_name } = req.body;
+    console.log('body', req.body);
     db.query('INSERT INTO users (email, first_name, last_name, password, is_active) VALUES (?, ?, ?, ?, ?)', [email, first_name, last_name, password, is_active], (err, result) => {
       if (err) throw err;
       res.json({ message: 'User added successfully', id: result.insertId });
+    });
+    db.query('insert into userroles (user_id, role_id, is_active) select u.user_id, (select role_id from roles where role_name= ? ), ? as is_active from users u where u.email=?', [role_name, is_active, email], (err, result) => {
     });
   });
   
@@ -47,15 +51,33 @@ const getUserById = ((req, res)=>{
 
   // User authentication
   const userAuthentication = ((req, res)=>{
+    console.log('user input', req.body);
     const data = {
         email: req.body.email,
         password: req.body.password
     };
-    db.query('SELECT first_name, last_name, email from users WHERE email=? AND password=? AND is_active=1', [data.email, data.password],function(err, results){
+    db.query('SELECT u.user_id, u.email, u.first_name, u.last_name, r.role_name from users u inner join userroles ur on u.user_id=ur.user_id inner join roles r on ur.role_id=r.role_id WHERE u.email=? AND u.password=? AND u.is_active=1', [data.email, data.password],function(err, results){
         if(err) throw err;
         if(results.length){
+            /*
             res.json({
                 message: `User ${results[0].email} authenticated successfully`,
+            });
+            */
+            console.log('result', results[0]);
+            const token = jwt.sign(
+              {
+                user_id: results[0].user_id,
+                email: results[0].email,
+                role_name: results[0].role_name
+              },
+              "thisistooconfidential",
+              { expiresIn: "1h" }
+            );
+      
+            res.status(200).json({
+              message: "Login Successful",
+              token: token,
             });
         }
         else{
