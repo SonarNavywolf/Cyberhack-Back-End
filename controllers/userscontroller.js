@@ -26,8 +26,7 @@ const getUserById = ((req, res)=>{
       if (err) throw err;
       res.json({ message: 'User added successfully', id: result.insertId });
     });
-    db.query('insert into userroles (user_id, role_id, is_active) select u.user_id, (select role_id from roles where role_name= ? ), ? as is_active from users u where u.email=?', [role_name, is_active, email], (err, result) => {
-    });
+    db.query('insert into userroles (user_id, role_id, is_active) select u.user_id, (select role_id from roles where role_name= ? ), ? as is_active from users u where u.email=?', [role_name, is_active, email], (err, result) => {});
   });
   
   // Update a user
