@@ -34,7 +34,7 @@ const getAdminDashboardStats = ((req, res) =>{
       console.log('jobCount', jobCount);
     });
     // 3. fetch all job seeker count
-    db.query('select count(1) as seeker_count FROM users u inner join userroles ur on u.user_id=ur.user_id inner join roles r on r.role_id=ur.role_id WHERE u.is_active=1', (err, result) => {
+    db.query('select count(1) as seeker_count FROM users u inner join userroles ur on u.user_id=ur.user_id inner join roles r on r.role_id=ur.role_id WHERE u.is_active=1 and r.role_name<>?', ["admin"], (err, result) => {
       if (err) throw err;
       console.log('result3', result);
       seekerCount = result[0].seeker_count;
@@ -42,7 +42,7 @@ const getAdminDashboardStats = ((req, res) =>{
     });
   
     // 4. fetch all applicants count
-    db.query('select count(1) as applicant_count FROM job_application ja inner join userroles ur on ja.provider_id=ur.user_id inner join roles r on r.role_id=ur.role_id WHERE r.role_name=? and ja.is_deleted<>1', [ngo_role_name], (err, result) => {
+    db.query('select count(1) as applicant_count FROM (select distinct ja.user_id FROM job_application ja inner join userroles ur on ja.provider_id=ur.user_id inner join roles r on r.role_id=ur.role_id inner join users u on u.user_id=ur.user_id WHERE r.role_name=? and ja.is_deleted<>1 and u.is_active=1)t', [ngo_role_name], (err, result) => {
       if (err) throw err;
       console.log('result4', result);
       applicantCount = result[0].applicant_count;
