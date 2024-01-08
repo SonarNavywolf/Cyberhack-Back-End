@@ -9,16 +9,18 @@ const {
     deleteExistingUser,
     userAuthentication,
     createNewUserRole,
-    resetUserPassword
+    resetUserPassword,
+    getAllJobs
 } = require('../controllers/userscontroller.js');
 
 router.get('/', getAllUsers);
-router.get('/:id', getUserById);
+router.get('/jobs', getAllJobs);
+router.get('/:user_id', getUserById);
 router.post('/register', registerNewUser);
-router.put('/:id', updateExistingUser);
-router.delete('/:id', deleteExistingUser);
+router.put('/:user_id', updateExistingUser);
+router.delete('/:user_id', deleteExistingUser);
 router.post('/login', userAuthentication);
 router.post('/userroles', createNewUserRole);
-router.post('resetpassword', resetUserPassword);
+router.post('/resetpassword', resetUserPassword);
 
 module.exports = router;
