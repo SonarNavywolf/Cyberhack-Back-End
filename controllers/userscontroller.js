@@ -89,9 +89,31 @@ const getUserById = ((req, res)=>{
   const deleteExistingUser = ((req, res)=>{
     console.log('inside deleteExistingUser');
     const { user_id } = req.params;
-    db.query('UPDATE users SET is_active = 0 WHERE user_id = ?', [user_id], (err) => {
+
+    db.query('select u.user_id, r.role_name from users u inner join userroles ur on u.user_id=ur.user_id inner join roles r on r.role_id=ur.role_id where u.is_active=1 and r.role_name=? and u.user_id=?', ["admin", user_id], (err, results) => {
       if (err) throw err;
-      res.json({ message: 'User deleted successfully' });
+        // check if its an admin
+        if(results.length){
+          //check if its the last admin
+          db.query('select u.user_id,u.email,r.role_name from users u inner join userroles ur on u.user_id=ur.user_id inner join roles r on ur.role_id=r.role_id WHERE u.is_active=1 and r.role_name=?', [results[0].role_name], (err, users) => {
+            if (err) throw err;
+            if(users.length > 1){
+              db.query('UPDATE users SET is_active = 0 WHERE user_id = ?', [user_id], (err) => {
+                if (err) throw err;
+                res.json({ message: 'User deleted successfully' });
+              });
+            }
+            else{
+              res.json({ message: 'Last admin account cannot be deleted.' });
+            }
+          });
+        }
+        else{
+          db.query('UPDATE users SET is_active = 0 WHERE user_id = ?', [user_id], (err) => {
+            if (err) throw err;
+            res.json({ message: 'User deleted successfully' });
+          });
+        }
     });
   });
 
