@@ -4,6 +4,8 @@ const db = require('../models/db.js');
 const upload = require('../upload.js');
 const { dateFormatter } = require("../utils.js");
 const { clearResume } = require("../utils.js");
+const bcryptjs = require("bcryptjs");
+const { validationResult } = require("express-validator");
 
 const getAdminDashboardStats = ((req, res) =>{
     let providerCount = 0;
@@ -128,6 +130,7 @@ const getAllUsersByUserId = ((req,res)=>{
     // add a new user
     const addUser = ((req, res)=>{
       console.log('inside add user method');
+      /*
       console.log('body', req.body);
       
       const {email, first_name, last_name, password, is_active, role_name } = req.body;
@@ -136,7 +139,41 @@ const getAllUsersByUserId = ((req,res)=>{
         res.json({ message: 'User added successfully', id: result.insertId });
       });
       db.query('insert into userroles (user_id, role_id, is_active) select u.user_id, (select role_id from roles where role_name= ? ), ? as is_active from users u where u.email=?', [role_name, is_active, email], (err, result) => {});
+      */
+      const errors = validationResult(req);
+
+      if (!errors.isEmpty()) {
+        const error = new Error("Validation failed");
+        error.statusCode = 422;
+        error.data = errors.array();
+        throw error;
+      }
+  
       
+      const {email, first_name, last_name, is_active, role_name } = req.body;
+  
+      const saltRounds = 12;
+      const password_plain = req.body.password;
+  
+      bcryptjs
+      .hash(password_plain, saltRounds)
+      .then((hashedPw) => {
+        //register user
+        db.query('INSERT INTO users (email, first_name, last_name, password, is_active) VALUES (?, ?, ?, ?, ?)', [email, first_name, last_name, hashedPw, is_active], (err, result) => {
+          if (err) throw err;
+          res.json({ message: 'User added successfully', id: result.insertId });
+        });
+        db.query('insert into userroles (user_id, role_id, is_active) select u.user_id, (select role_id from roles where role_name= ? ), ? as is_active from users u where u.email=?', [role_name, is_active, email], (err, result) => {});
+      })
+      .then((user) => {
+        //res.status(201).json({ message: "Registered Successfully!" });
+      })
+      .catch((err) => {
+        if (!err.statusCode) {
+          err.statusCode = 500;
+        }
+        next(err);
+      });
     });
 
 
